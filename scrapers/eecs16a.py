@@ -2,14 +2,13 @@ import util
 
 def scrape():
     a_href_elems = util.get_a_href_elems("https://eecs16a.org/")
-    print(a_href_elems)
-    return
+    hrefs = a_href_elems[0]
+    texts = a_href_elems[1]
 
-    for elem in a_href_elems:
-        href = elem
-        text = elem
-        if not text:
-            continue
+    for i in range(len(hrefs)):
+        href = hrefs[i]
+        text = texts[i]
+        print(href, text)
 
         if text == "Slides":
             dl_16a_file(href, "slides/")
