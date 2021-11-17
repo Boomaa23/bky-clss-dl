@@ -4,6 +4,8 @@ Downloads course files from supported UCB course websites automatically.
 
 ## Usage
 1. Download this repository
+2. Install [Python 3.5 or newer](https://www.python.org/downloads/)
+3. Install prerequisites with pip: `pip install -r requirements.txt`
 2. Run `python3 main.py [course_name]`
 3. All files from that course will be downloaded
 
