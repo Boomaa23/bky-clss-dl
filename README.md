@@ -17,4 +17,4 @@ Downloads course files from supported UCB course websites automatically.
 | Course Name | Semester |
 |------------|-----------|
 | EECS16A    | FA21      |
-<!-- | CS61A      | FA21      | -->
+| CS61A      | FA21      |

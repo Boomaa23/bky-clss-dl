@@ -45,6 +45,8 @@ class CS61AScraper(util.AbstractCourseScraper):
 
             if "/exam/" in href:
                 self.dl_course_file(href, "exams/")
+            elif "/mock-exams/" in href:
+                self.dl_course_file(href, "mockexams/")
             else:
                 self.dl_course_file(href, "misc/")
     
