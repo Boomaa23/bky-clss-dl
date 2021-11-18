@@ -1,54 +1,43 @@
 import util
 
-def scrape():
-    a_href_elems = util.get_a_href_elems("https://eecs16a.org/")
-    hrefs = a_href_elems[0]
-    texts = a_href_elems[1]
-
-    for i in range(len(hrefs)):
-        href = hrefs[i]
-        text = texts[i]
-        print(href, text)
-
-        if text == "Slides":
-            dl_16a_file(href, "slides/")
-        elif "Note " in text:
-            dl_16a_file(href, "notes/")
-        elif text == "Anusha's Notes":
-            dl_16a_file(href, "discussion/")
-        elif text == "Prob PDF" or text == "Ans PDF" or text == "iPython Sol":
-            if "homework" in href:
-                dl_16a_file(href, "homework/")
-            else:
-                dl_16a_file(href, "discussion/")
-        elif text == "Presentation" or text == "In-Person Zip File":
-            dl_16a_file(href, "lab/")
-        elif "student-resources/exams" in href:
-            dl_16a_file(href, "exams/")
-        elif valid_url(href):
-            if "discussion" in href:
-                dl_16a_file(href, "discussion/")
-            elif "homework" in href:
-                dl_16a_file(href, "homework/")
-            else:
-                dl_16a_file(href, "misc/")
-
-invalid_terms = [
+invalid_url_keywords = [
     ".html", "forms.gle", "datahub", "youtu.be", "youtube", 
     "google.com", "zoom", "accessengineeringlibrary"
 ]
 
-def valid_url(href):
-    for term in invalid_terms:
-        if term in href:
-            return False
-    return True
+class EECS16AScraper(util.AbstractCourseScraper):
+    def __init__(self):
+        super().__init__("eecs16a", invalid_url_keywords)
 
-def dl_16a_file(url, path):
-    if not url.startswith("https://") \
-            and not url.startswith("http://"):
-        url = "https://eecs16a.org/" + url
-    path = "eecs16a/" + path
-    if valid_url(url):
-        print(path, url)
-        util.download_file(url, path)
+    def scrape(self):
+        hrefs, texts = util.get_a_href_elems("https://eecs16a.org/")
+
+        for i in range(len(hrefs)):
+            href = hrefs[i]
+            text = texts[i]
+            print(href, text)
+
+            if text == "Slides":
+                self.dl_course_file(href, "slides/")
+            elif "Note " in text:
+                self.dl_course_file(href, "notes/")
+            elif text == "Anusha's Notes":
+                self.dl_course_file(href, "discussion/")
+            elif text == "Prob PDF" or text == "Ans PDF" or text == "iPython Sol":
+                if "homework" in href:
+                    self.dl_course_file(href, "homework/")
+                else:
+                    self.dl_course_file(href, "discussion/")
+            elif text == "Presentation" or text == "In-Person Zip File":
+                self.dl_course_file(href, "lab/")
+            elif "student-resources/exams" in href:
+                self.dl_course_file(href, "exams/")
+            elif self.valid_url(href):
+                if "discussion" in href:
+                    self.dl_course_file(href, "discussion/")
+                elif "homework" in href:
+                    self.dl_course_file(href, "homework/")
+                else:
+                    self.dl_course_file(href, "misc/")
+
+scraper = EECS16AScraper()
