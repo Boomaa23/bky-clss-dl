@@ -25,7 +25,7 @@ class EECS16AScraper(util.AbstractCourseScraper):
                 for elem in href_elems:
                     href = elem['href']
                     href = super().fully_qualify_url(href)
-                    if not super().direct_dl(href):
+                    if not super().direct_dl(href) and 'drive.google.com' not in href:
                         print("NOT DIRECT")
                         href = util.get_final_url(href)
                     try:

@@ -1,5 +1,9 @@
 **/__pycache__/
+venv/
 .idea/
+token.json
+credentials.json
+
 eecs16a/
 cs61a/
 ee16a/
