@@ -1,107 +1,82 @@
-from html.parser import HTMLParser
+from multiprocessing.pool import ThreadPool
+import bs4
 import os
-import urllib3
-from urllib3.exceptions import MaxRetryError
+import re
+import requests
 
-def get_page(url):
-    connection = urllib3.connection_from_url(url)
-    response = connection.urlopen('GET', url)
-    return response.data.decode('utf-8')
-
-def get_a_href_elems(url):
-    href_parser = HREFParser()
-    href_parser.feed(get_page(url))
-    return href_parser.get_ahrefs()
 
 class AbstractCourseScraper:
-    def __init__(self, course_name, invalid_url_keywords, course_url=None):
-        self.course_name = course_name
-        self.invalid_url_keywords = invalid_url_keywords
-        self.base_course_url = f'https://{course_name}.org' if not course_url else course_url
+    direct_ext = ("pdf", "ipynb", "zip")
 
-    def scrape(self):
-        raise NotImplementedError("Scraper method not implemented")
+    def __init__(self, name, valid_semesters, override_url=None):
+        self.name = name
+        self.override_url = override_url
+        self.base_url = f"https://inst.eecs.berkeley.edu/~{name}/"
+        self.valid_semesters = valid_semesters
+        self.semester = None
+        self.debug = False
+        self.href_dl_queue = []
 
-    def dl_course_file(self, url, path):
-        if not url.startswith("https://") \
-                and not url.startswith("http://"):
-            url = self.base_course_url + url
-        path = self.course_name + "/" + path
-        if self.valid_url(url):
-            print(path, url)
-            download_file(url, path)
+    def get_course_url(self):
+        return self.override_url if self.override_url else self.base_url + self.semester + "/"
 
-    def valid_url(self, url):
-        for term in self.invalid_url_keywords:
-            if term in url:
-                return False
-        return True
+    def scrape(self, semester, debug=False):
+        if semester not in self.valid_semesters:
+            raise NotImplementedError(f"\"{semester}\" is not a valid semester for \"{self.name}\"")
+        self.semester = semester
+        self.debug = debug
+        self.do_scrape(get_page(self.get_course_url()))
+        self.dl_course_queue()
 
-class HREFParser(HTMLParser):
-    def __init__(self):
-        self.parsing_ahref = False
-        self.href = []
-        self.text = []
-        HTMLParser.__init__(self)
+    def do_scrape(self, page):
+        raise NotImplementedError(f"\"{self.name}\" scraper not implemented")
 
-    def handle_starttag(self, tag, attrs):
-        if tag == "a":
-            for attr in attrs:
-                if attr[0] == "href":
-                    self.href.append(attr[1])
-                    self.parsing_ahref = True
-                    return
+    def add_course_file(self, url, folder):
+        url = self.fully_qualify_url(url)
+        path = self.name + "/" + folder
+        self.href_dl_queue.append((url, path))
 
-    def handle_endtag(self, tag):
-        if self.parsing_ahref and tag == "a":
-            self.parsing_ahref = False
+    def fully_qualify_url(self, url):
+        if not url.startswith("http"):
+            url = self.get_course_url() + "/" + url
+        return url
 
-    def handle_data(self, data):
-        if self.parsing_ahref:
-            self.text.append(data)
-            self.parsing_ahref = False
-    
-    def get_ahrefs(self):
-        return (self.href, self.text)
+    def dl_course_queue(self):
+        for idx, href in enumerate(self.href_dl_queue):
+            if self.debug:
+                print(idx, *href)
+            download_file(*href)
+
+    def direct_dl(self, href):
+        return href[href.rindex(".") + 1:] in AbstractCourseScraper.direct_ext
 
 
-def download_file(url, path, new_fn=None):
-    if (new_fn and os.path.exists(os.path.join(new_fn))) \
-            or os.path.exists(os.path.join(get_url_filename(url))):
+def get_page(url):
+    req = requests.get(url)
+    if req.status_code != 200:
+        return bs4.BeautifulSoup("")
+    meta_match = re.findall(r"url='(.*)'", req.text)
+    if 'http-equiv="Refresh"' in req.text and meta_match:
+        return get_page(meta_match[0])
+    return bs4.BeautifulSoup(req.content, features="html.parser")
+
+
+def get_final_url(init_url):
+    name_req = requests.head(init_url, allow_redirects=True)
+    return name_req.url if name_req.history else init_url
+
+
+def download_file(url, path=None, filename=None):
+    if not filename:
+        filename = url.split('/')[-1]
+    if path:
+        filename = path + "/" + filename
+        os.makedirs(path, exist_ok=True)
+    if os.path.exists(filename):
         return
-        
-    user_agent = {'user-agent': 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) ..'}
-    http = urllib3.PoolManager(10, headers=user_agent)
-    try:
-        response = http.urlopen('GET', url, assert_same_host=False, retries=10)
-    except MaxRetryError:
-        return
-    if response.geturl() and response.geturl() != url:
-        url = response.geturl()
-    if not new_fn:
-        new_fn = get_url_filename(url)
-    file_path = os.path.join(path, new_fn)
 
-    if not os.path.exists(file_path):
-        try:
-            os.makedirs(path)
-        except FileExistsError:
-            pass
-        with open(file_path, "wb") as file:
-            file.write(response.data)
-
-def get_url_filename(url):
-    try:
-        end = url.rindex("#")
-    except ValueError:
-        try:
-            end = url.index("?")
-        except ValueError:
-            end = len(url)
-    return url[url.rindex("/") + 1:end]
-
-def download_yt(url, path):
-    pass
-
-def download_gdrive(url, path):
-    pass
+    with requests.get(url, stream=True) as stream:
+        stream.raise_for_status()
+        with open(filename, 'wb') as file:
+            for chunk in stream.iter_content(chunk_size=4096):
+                file.write(chunk)
