@@ -1,11 +1,12 @@
-import util
+import common
+import main
 
 
-class EECS16AScraper(util.AbstractCourseScraper):
+class EECS16AScraper(common.AbstractCourseScraper):
     def __init__(self):
         super().__init__("ee16a", ("fa21",), override_url="https://eecs16a.org")
-        self.course_name = "eecs16a"
-        self.course_base_url = "https://eecs16a.org"
+        self.name = "eecs16a"
+        self.base_url = "https://eecs16a.org"
 
     def do_scrape(self, page):
         all_hrefs = page.find_all("a", href=True)
@@ -14,7 +15,7 @@ class EECS16AScraper(util.AbstractCourseScraper):
         content_tables = page.find_all("table")
         if not content_tables:
             return
-        if self.debug:
+        if main.ARGS.debug:
             print("\n\nPARSING\n-------------")
 
         schedule_table = content_tables[0].find_all("tr")
@@ -25,15 +26,14 @@ class EECS16AScraper(util.AbstractCourseScraper):
                 for elem in href_elems:
                     href = elem['href']
                     href = super().fully_qualify_url(href)
-                    if not super().direct_dl(href) and 'drive.google.com' not in href:
-                        print("NOT DIRECT")
-                        href = util.get_final_url(href)
+                    if not super().can_direct_dl(href) and 'drive.google.com' not in href:
+                        href = common.get_final_url(href)
                     try:
                         href = href[:href.rindex("#")]
                     except ValueError:
                         pass
                     text = elem.text
-                    if self.debug:
+                    if main.ARGS.debug:
                         print(len(self.href_dl_queue), text, href)
 
                     if col_num == 0:
@@ -47,24 +47,23 @@ class EECS16AScraper(util.AbstractCourseScraper):
                             super().add_course_file(href, "notes")
                             all_hrefs.remove(elem)
                         elif 'youtu.be' in href:
-                            # youtube lecture video
-                            pass
+                            super().add_course_file(href, "lecture", common.DLType.YOUTUBE)
+                            all_hrefs.remove(elem)
                     elif col_num == 3:
                         if 'drive.google.com' in href:
-                            # discussion notes
-                            pass
+                            super().add_course_file(href, "discussion", common.DLType.GOOGLE)
+                            all_hrefs.remove(elem)
                         elif 'youtu.be' in href:
-                            # recorded discussion
-                            pass
+                            super().add_course_file(href, "discussion", common.DLType.YOUTUBE)
+                            all_hrefs.remove(elem)
                         elif 'discussion' in href:
                             super().add_course_file(href, "discussion")
                             all_hrefs.remove(elem)
                     elif col_num == 4:
-                        if text and ('Presentation' in text or "In-Person Zip File" in text) \
-                                and 'datahub' not in href:
+                        if text and 'datahub' not in href and \
+                                ('Presentation' in text or "In-Person Zip File" in text):
                             if 'drive.google.com' in href:
-                                # special gdrive lab worksheet handling
-                                pass
+                                super().add_course_file(href, "lab", common.DLType.GOOGLE)
                             else:
                                 super().add_course_file(href, "lab")
                             all_hrefs.remove(elem)
@@ -84,9 +83,8 @@ class EECS16AScraper(util.AbstractCourseScraper):
 
         url_pct = round((len(self.href_dl_queue) / init_num_hrefs) * 100, 2)
         print(f'Now downloading {len(self.href_dl_queue)} files ({url_pct}%)')
-        if self.debug:
+        if main.ARGS.debug:
             print("\n\nDOWNLOADING\n-------------")
-
 
 
 scraper = EECS16AScraper()

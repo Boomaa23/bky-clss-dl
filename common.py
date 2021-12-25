@@ -1,12 +1,20 @@
-from multiprocessing.pool import ThreadPool
 import bs4
 import os
 import re
 import requests
 
+import gutil
+import main
+
+
+class DLType:
+    REGULAR = 0
+    GOOGLE = 1
+    YOUTUBE = 2
+
 
 class AbstractCourseScraper:
-    direct_ext = ("pdf", "ipynb", "zip")
+    direct_ext = ["pdf", "ipynb", "zip"]
 
     def __init__(self, name, valid_semesters, override_url=None):
         self.name = name
@@ -14,27 +22,25 @@ class AbstractCourseScraper:
         self.base_url = f"https://inst.eecs.berkeley.edu/~{name}/"
         self.valid_semesters = valid_semesters
         self.semester = None
-        self.debug = False
         self.href_dl_queue = []
 
     def get_course_url(self):
         return self.override_url if self.override_url else self.base_url + self.semester + "/"
 
-    def scrape(self, semester, debug=False):
+    def scrape(self, semester):
         if semester not in self.valid_semesters:
             raise NotImplementedError(f"\"{semester}\" is not a valid semester for \"{self.name}\"")
         self.semester = semester
-        self.debug = debug
         self.do_scrape(get_page(self.get_course_url()))
         self.dl_course_queue()
 
     def do_scrape(self, page):
         raise NotImplementedError(f"\"{self.name}\" scraper not implemented")
 
-    def add_course_file(self, url, folder):
+    def add_course_file(self, url, folder, file_type=DLType.GOOGLE):
         url = self.fully_qualify_url(url)
         path = self.name + "/" + folder
-        self.href_dl_queue.append((url, path))
+        self.href_dl_queue.append((url, path, file_type))
 
     def fully_qualify_url(self, url):
         if not url.startswith("http"):
@@ -43,12 +49,16 @@ class AbstractCourseScraper:
 
     def dl_course_queue(self):
         for idx, href in enumerate(self.href_dl_queue):
-            if self.debug:
-                print(idx, *href)
-            download_file(*href)
+            print(idx, *href)
+            if href[2] == DLType.REGULAR:
+                download_file(*href)
+            elif href[2] == DLType.GOOGLE and not main.ARGS.no_gdrive:
+                gutil.download_drive_file(gutil.fileid_from_url(href[0]), href[1])
+            elif href[2] == DLType.YOUTUBE and not main.ARGS.no_yt:
+                gutil.download_youtube_video(href)
 
-    def direct_dl(self, href):
-        return href[href.rindex(".") + 1:] in AbstractCourseScraper.direct_ext
+    def can_direct_dl(self, href):
+        return href[href.rindex(".") + 1:] in self.direct_ext
 
 
 def get_page(url):
