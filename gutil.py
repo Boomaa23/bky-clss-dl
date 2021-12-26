@@ -1,3 +1,4 @@
+import base64
 import os.path
 import re
 
@@ -73,6 +74,9 @@ def get_credentials():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            if not os.path.exists("credentials.json"):
+                with open("credentials.json", "wb") as output, open("gsvc.conf", "r") as encoded:
+                    output.write(base64.b64decode(encoded.readline().encode("utf-8")))
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=5818)
         with open("token.json", "w") as token:
