@@ -3,6 +3,7 @@ venv/
 .idea/
 token.json
 credentials.json
+test/
 
 eecs16a/
 cs61a/

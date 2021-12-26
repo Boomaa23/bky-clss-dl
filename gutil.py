@@ -113,6 +113,8 @@ def download_drive_file(file_id, path=None):
     if path:
         os.makedirs(path, exist_ok=True)
     filepath = path + "/" + filename if path else filename
+    if os.path.exists(filepath):
+        return
     file = open(filepath, "wb")
     downloader = MediaIoBaseDownload(file, req)
     done = False

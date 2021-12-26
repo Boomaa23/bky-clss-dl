@@ -1,4 +1,6 @@
 from scrapers import eecs16a
+import test
+
 import argparse
 
 
@@ -14,11 +16,12 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(description="Downloads files from supported UCB course websites automatically")
     parser.add_argument("course", help="course abbreviation to download")
-    parser.add_argument("semester", help="semester abbreviation to download: [SP/SU/FA + YY]")
+    parser.add_argument("semester", help="semester abbreviation to download: [sp/su/fa + YY]")
     parser.add_argument("--debug", "-v", action="store_true", help="verbose debugging to stdout")
     parser.add_argument("--include-yt", action="store_true", help="download Youtube videos")
     parser.add_argument("--no-gdrive", action="store_true", help="do not download Google Drive files")
     parser.add_argument("--max-size", type=check_positive, help="maximum single filesize (in MB)")
+    parser.add_argument("--test", "-t", action="store_true", help="run a test script only")
     return parser.parse_args()
 
 
@@ -35,4 +38,7 @@ def check_positive(value):
 ARGS = parse_args()
 
 if __name__ == "__main__":
-    main()
+    if ARGS.test:
+        test.run_tests()
+    else:
+        main()
