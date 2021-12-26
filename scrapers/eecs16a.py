@@ -6,7 +6,6 @@ class EECS16AScraper(common.AbstractCourseScraper):
     def __init__(self):
         super().__init__("ee16a", ("fa21",), override_url="https://eecs16a.org")
         self.name = "eecs16a"
-        self.base_url = "https://eecs16a.org"
 
     def do_scrape(self, page):
         all_hrefs = page.find_all("a", href=True)
@@ -26,7 +25,10 @@ class EECS16AScraper(common.AbstractCourseScraper):
                 for elem in href_elems:
                     href = elem['href']
                     href = super().fully_qualify_url(href)
-                    if not super().can_direct_dl(href) and 'drive.google.com' not in href:
+                    if not super().is_direct_download(href) \
+                            and "google" not in href \
+                            and "datahub" not in href \
+                            and "zoom" not in href:
                         href = common.get_final_url(href)
                     try:
                         href = href[:href.rindex("#")]
@@ -37,49 +39,58 @@ class EECS16AScraper(common.AbstractCourseScraper):
                         print(len(self.href_dl_queue), text, href)
 
                     if col_num == 0:
-                        super().add_course_file(href, "misc")
+                        super().queue_course_file(href, "misc")
                         all_hrefs.remove(elem)
                     elif col_num == 2:
                         if 'Slides' in href:
-                            super().add_course_file(href, "slides")
+                            super().queue_course_file(href, "slides", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
                         elif 'Note' in href:
-                            super().add_course_file(href, "notes")
+                            super().queue_course_file(href, "notes", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
                         elif 'youtu.be' in href:
-                            super().add_course_file(href, "lecture", common.DLType.YOUTUBE)
+                            super().queue_course_file(href, "lecture", common.DLType.YOUTUBE)
                             all_hrefs.remove(elem)
                     elif col_num == 3:
                         if 'drive.google.com' in href:
-                            super().add_course_file(href, "discussion", common.DLType.GOOGLE)
+                            super().queue_course_file(href, "discussion", common.DLType.GOOGLE)
                             all_hrefs.remove(elem)
                         elif 'youtu.be' in href:
-                            super().add_course_file(href, "discussion", common.DLType.YOUTUBE)
+                            super().queue_course_file(href, "discussion", common.DLType.YOUTUBE)
                             all_hrefs.remove(elem)
                         elif 'discussion' in href:
-                            super().add_course_file(href, "discussion")
+                            super().queue_course_file(href, "discussion", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
                     elif col_num == 4:
                         if text and 'datahub' not in href and \
                                 ('Presentation' in text or "In-Person Zip File" in text):
                             if 'drive.google.com' in href:
-                                super().add_course_file(href, "lab", common.DLType.GOOGLE)
+                                super().queue_course_file(href, "lab", common.DLType.GOOGLE)
                             else:
-                                super().add_course_file(href, "lab")
+                                super().queue_course_file(href, "lab", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
                     elif col_num == 5:
                         if 'homework' in href:
-                            super().add_course_file(href, "lab")
+                            super().queue_course_file(href, "lab", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
 
         exam_hrefs = content_tables[2].find_all("a", href=True)
         for elem in exam_hrefs:
-            super().add_course_file(elem['href'], "exams")
+            super().queue_course_file(elem['href'], "exams", common.DLType.REGULAR)
             all_hrefs.remove(elem)
 
         for elem in all_hrefs:
-            if '.pdf' in elem['href'].lower():
-                super().add_course_file(elem['href'], "misc")
+            href = elem['href']
+            if super().is_direct_download(href):
+                fn = href[href.rindex("/") + 1:]
+                if fn.startswith('dis') or fn.startswith('ans') or fn.startswith('anusha'):
+                    super().queue_course_file(href, "discussion")
+                elif fn.startswith('Note'):
+                    super().queue_course_file(href, "notes")
+                elif fn.startswith('Lecture'):
+                    super().queue_course_file(href, "slides")
+                else:
+                    super().queue_course_file(href, "misc")
 
         url_pct = round((len(self.href_dl_queue) / init_num_hrefs) * 100, 2)
         print(f'Now downloading {len(self.href_dl_queue)} files ({url_pct}%)')

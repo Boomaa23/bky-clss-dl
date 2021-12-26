@@ -12,19 +12,22 @@ Downloads course files from supported UCB course websites automatically.
 
 ## Arguments
 ```
-usage: main.py [-h] [--debug] [--no-yt] [--no-gdrive] course semester
+usage: main.py [-h] [--debug] [--include-yt] [--no-gdrive]
+               [--max-size MAX_SIZE]
+               course semester
 
 Downloads files from supported UCB course websites automatically
 
 positional arguments:
-  course       course abbreviation to download
-  semester     semester abbreviation to download: [SP/SU/FA + YY]
+  course               course abbreviation to download
+  semester             semester abbreviation to download: [SP/SU/FA + YY]
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --debug      verbose debugging to stdout
-  --no-yt      do not auth & download Youtube videos
-  --no-gdrive  do not auth & download Google Drive files
+  -h, --help           show this help message and exit
+  --debug, -v          verbose debugging to stdout
+  --include-yt         download Youtube videos
+  --no-gdrive          do not download Google Drive files
+  --max-size MAX_SIZE  maximum single filesize (in MB)
 ```
 
 ## Troubleshooting
