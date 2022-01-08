@@ -1,6 +1,9 @@
 import base64
+import os
 import os.path
 import re
+import subprocess
+import sys
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -10,8 +13,10 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
 
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError
 
 import main
+import common
 
 MIME_EXT = {
     "audio/aac": "aac",
@@ -133,12 +138,41 @@ YTDLP_OPTS = {
 YTDL = None
 
 
+FFMPEG_URLS = {
+    "darwin": "https://evermeet.cx/ffmpeg/getrelease/zip",
+    "win32": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+    "linux": "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz"
+}
+
+def install_ffmpeg():
+    cmd = "where" if sys.platform == "win32" else "which"
+    archive_ext = "tar.xz" if sys.platform == "linux" else "zip"
+    url = FFMPEG_URLS[sys.platform]
+    try: 
+        subprocess.check_output(cmd + " ffmpeg", shell=True)
+    except:
+        if not os.path.exists("ffmpeg/") or os.listdir("ffmpeg") == 0:
+            print("ffmpeg is required to download this file and was not detected on your system.\n" + 
+                  "It will be automatically downloaded and installed now.")
+            common.download_file(url, "ffmpeg", "ffmpeg." + archive_ext)
+            if sys.platform == "linux":
+                os.system("tar xf ffmpeg/ffmpeg.tar.xz --strip-components=1 --directory ffmpeg")
+            elif sys.platform == "win32":
+                os.system("powershell -command \"Expand-Archive -Force 'ffmpeg/ffmpeg.zip' 'ffmpeg'\"")
+                for ff_exec in ["ffmpeg", "ffplay", "ffprobe"]:
+                    os.system(f"move ffmpeg\\ffmpeg-master-latest-win64-gpl\\bin\\{ff_exec}.exe ffmpeg\\{ff_exec}.exe")
+            else:
+                os.system("unzip ffmpeg/ffmpeg.zip -d ffmpeg/")
+        YTDLP_OPTS["ffmpeg_location"] = "ffmpeg/"
+
+
 def init_ytdl(output_path=None):
     global YTDL
     if not YTDL:
-        input("WARNING: Some videos may be private and require Berkeley authentication. \n" +
+        input("WARNING: Some videos may be private and require Berkeley authentication.\n" +
               "Please sign in to your Berkeley Youtube account within Chrome to ensure videos download.\n" +
               "Press enter to continue...")
+        install_ffmpeg()
         if not main.ARGS.debug:
             YTDLP_OPTS["quiet"] = "True"
         if main.ARGS.max_size:
@@ -155,4 +189,7 @@ def init_ytdl(output_path=None):
 def download_youtube_video(url, path=None):
     init_ytdl(path)
     os.makedirs(path, exist_ok=True)
-    YTDL.download([url])
+    try:
+        YTDL.download([url])
+    except DownloadError as e:
+        print(e)

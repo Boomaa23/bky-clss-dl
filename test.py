@@ -1,13 +1,15 @@
 import common
 import gutil
+import main
 
 import os
 
 
 def run_tests():
+    main.ARGS.debug = True
     count = file_test()
     count += download_test()
-    print(f"TOTAL: {count}/8 tests passed, {8 - count}/8 failed.")
+    print(f"TOTAL: {count}/8 tests passed.")
 
 
 def file_test():
@@ -21,7 +23,7 @@ def file_test():
     count += verify_file("token.json")
 
     print("\nFile test done. Check test/ folder to verify intended results.")
-    print(f"{count}/2 tests passed, {2 - count}/2 failed.")
+    print(f"{count}/2 tests passed.")
     return count
 
 
@@ -61,7 +63,7 @@ def download_test():
     count += verify_file("test/EECS 16A Lecture 12B 11-18-21 [vDF0cY1LCq0].mp4")
 
     print("\nDownload test done. Check test/ folder to verify intended results.")
-    print(f"{count}/6 tests passed, {6 - count}/6 failed.")
+    print(f"{count}/6 tests passed.")
     return count
 
 

@@ -4,6 +4,7 @@ venv/
 token.json
 credentials.json
 test/
+ffmpeg/
 
 eecs16a/
 cs61a/
