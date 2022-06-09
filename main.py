@@ -1,4 +1,4 @@
-from scrapers import eecs16a
+import importlib
 import test
 
 import argparse
@@ -7,9 +7,11 @@ import argparse
 def main():
     try:
         print(f"Downloading {ARGS.semester} {ARGS.course} files...")
-        eval(f"{ARGS.course}.scraper.scrape(\"{ARGS.semester}\")")
+        scraper_module = importlib.import_module(f'scrapers.{ARGS.course}')
+        eval(f"scraper_module.scraper.scrape(\"{ARGS.semester}\")")
         print("\nCourse file download complete")
-    except NameError:
+    except NameError as e:
+        print(e)
         print(f"ERROR: No matching course scraper for \"{ARGS.course} {ARGS.semester}\"")
 
 
