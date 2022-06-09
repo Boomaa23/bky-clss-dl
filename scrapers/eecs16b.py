@@ -42,10 +42,10 @@ class EECS16BScraper(common.AbstractCourseScraper):
                         super().queue_course_file(href, "misc")
                         all_hrefs.remove(elem)
                     elif col_num == 2:
-                        if 'Written Notes' in href:
+                        if 'Written Notes' in text:
                             super().queue_course_file(href, "slides", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
-                        elif 'Note' in href:
+                        elif 'Note' in text:
                             super().queue_course_file(href, "notes", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
                         elif 'youtu.be' in href:
@@ -71,7 +71,7 @@ class EECS16BScraper(common.AbstractCourseScraper):
                             all_hrefs.remove(elem)
                     elif col_num == 5:
                         if 'homework' in href:
-                            super().queue_course_file(href, "lab", common.DLType.REGULAR)
+                            super().queue_course_file(href, "homework", common.DLType.REGULAR)
                             all_hrefs.remove(elem)
 
         exam_hrefs = content_tables[3].find_all("a", href=True)

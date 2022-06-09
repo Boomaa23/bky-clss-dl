@@ -43,5 +43,7 @@ optional arguments:
 ## Supported Courses
 | Course Name | Semesters |
 |-------------|-----------|
-| EECS16B     | SP22      |
-| EECS16A     | FA21      |
+| CS 61A      | SP22      |
+| CS 61B      | SP22      |
+| EECS 16B    | SP22      |
+| EECS 16A    | FA21      |
