@@ -46,7 +46,7 @@ class EECS127Scraper(common.AbstractCourseScraper):
                 super().queue_course_file(href, "lecture", common.DLType.YOUTUBE)
                 all_hrefs.remove(elem)
             elif 'hw' in href:
-                super().queue_course_file(href, "homework", common.DLType.YOUTUBE)
+                super().queue_course_file(href, "homework", common.DLType.REGULAR)
                 all_hrefs.remove(elem)
 
         resources_page = common.get_page(self.get_course_url() + "/resources/")
