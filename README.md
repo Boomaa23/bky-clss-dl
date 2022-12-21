@@ -47,3 +47,4 @@ optional arguments:
 | CS 61B      | SP22      |
 | EECS 16B    | SP22      |
 | EECS 16A    | FA21      |
+| EECS 127    | FA22      |
